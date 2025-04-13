@@ -1,29 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Chart from 'chart.js/auto';
 
 function SimulationResults({ results }) {
   const [outcomeChart, setOutcomeChart] = useState(null);
+  const chartRef = useRef(null);
   
-  // Créer/mettre à jour le graphique pour les résultats
+  // Create/update chart for results
   useEffect(() => {
     if (!results) return;
     
     const { resultatsFT } = results;
     
-    // Préparer les données pour le graphique
+    // Prepare data for chart
     const issues = [
       { name: `Victoire ${results.teamAName}`, value: parseFloat(resultatsFT.probas.victoireA) },
       { name: 'Match nul', value: parseFloat(resultatsFT.probas.nul) },
       { name: `Victoire ${results.teamBName}`, value: parseFloat(resultatsFT.probas.victoireB) }
     ];
     
-    // Détruire le graphique existant s'il y en a un
+    // Destroy existing chart if there is one
     if (outcomeChart) {
       outcomeChart.destroy();
     }
     
-    // Créer un nouveau graphique
-    const ctx = document.getElementById('outcomeChart').getContext('2d');
+    // Create new chart
+    const ctx = chartRef.current.getContext('2d');
     const newChart = new Chart(ctx, {
       type: 'pie',
       data: {
@@ -31,9 +32,9 @@ function SimulationResults({ results }) {
         datasets: [{
           data: issues.map(i => i.value),
           backgroundColor: [
-            'rgba(93, 92, 222, 0.7)',  // Victoire A
-            'rgba(209, 213, 219, 0.7)', // Nul
-            'rgba(56, 189, 248, 0.7)'   // Victoire B
+            'rgba(93, 92, 222, 0.7)',  // Victory A
+            'rgba(209, 213, 219, 0.7)', // Draw
+            'rgba(56, 189, 248, 0.7)'   // Victory B
           ],
           borderColor: [
             'rgba(93, 92, 222, 1)',
@@ -61,7 +62,7 @@ function SimulationResults({ results }) {
     
     setOutcomeChart(newChart);
     
-    // Nettoyer le graphique à la destruction du composant
+    // Clean up chart on component destruction
     return () => {
       if (newChart) {
         newChart.destroy();
@@ -69,12 +70,12 @@ function SimulationResults({ results }) {
     };
   }, [results]);
   
-  // Si pas de résultats, ne rien afficher
+  // If no results, display nothing
   if (!results) return null;
   
   const { teamAName, teamBName, resultatsHT, resultatsFT, couponParis, couponParis100 } = results;
   
-  // Trouver l'issue la plus probable
+  // Find most probable outcome
   const issues = [
     { name: `Victoire ${teamAName}`, value: parseFloat(resultatsFT.probas.victoireA) },
     { name: 'Match nul', value: parseFloat(resultatsFT.probas.nul) },
@@ -91,10 +92,10 @@ function SimulationResults({ results }) {
           Résultats: {teamAName} vs {teamBName}
         </h2>
         
-        {/* Coupon sûr à jouer (seulement 100%) */}
+        {/* Reliable betting coupon (only showing bets with 75%+ probability) */}
         <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-5 rounded-lg mb-8 shadow-lg">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Pronostics 100% Gagnants</h3>
+            <h3 className="text-xl font-bold">Pronostics Fiables (≥75%)</h3>
             <span className="bg-white text-green-700 px-3 py-1 rounded-full text-sm font-bold">
               {couponParis100.length} pronostics sûrs
             </span>
@@ -102,7 +103,7 @@ function SimulationResults({ results }) {
           <div className="space-y-2 bg-white bg-opacity-20 p-4 rounded-lg">
             {couponParis100.length === 0 ? (
               <p className="text-center text-white italic">
-                Aucun pronostic avec une probabilité de 100% n'a été identifié pour ce match.
+                Aucun pronostic avec une probabilité supérieure à 75% n'a été identifié pour ce match.
               </p>
             ) : (
               <>
@@ -119,7 +120,7 @@ function SimulationResults({ results }) {
                   </div>
                 ))}
                 <div className="mt-4 text-center text-white text-sm italic">
-                  Ces pronostics ont tous une probabilité de 100% selon notre simulation avancée.
+                  Ces pronostics ont tous une probabilité d'au moins 75% selon notre simulation avancée.
                 </div>
               </>
             )}
@@ -127,7 +128,7 @@ function SimulationResults({ results }) {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Résultats textuels */}
+          {/* Textual results */}
           <div className="space-y-6">
             <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
               <h3 className="text-lg font-semibold mb-3">Scores probables</h3>
@@ -160,10 +161,10 @@ function SimulationResults({ results }) {
             </div>
           </div>
           
-          {/* Graphique */}
+          {/* Chart */}
           <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg flex items-center justify-center">
             <div className="w-full h-64">
-              <canvas id="outcomeChart"></canvas>
+              <canvas ref={chartRef}></canvas>
             </div>
           </div>
         </div>

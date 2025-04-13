@@ -1,78 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import React, { useState, useEffect } from 'react';
+import { api as historyApi } from '../api';
+import { formatDate } from '../internal/services';
 
 function SimulationHistory({ onClose, newSimulation }) {
-  const [history, setHistory] = useLocalStorage('pr_pronos_history', []);
+  const [history, setHistory] = useState([]);
   const [expanded, setExpanded] = useState(false);
   
-  // Ajouter une nouvelle simulation à l'historique
+  // Load history on mount
+  useEffect(() => {
+    setHistory(historyApi.getHistory());
+  }, []);
+  
+  // Add new simulation to history
   useEffect(() => {
     if (newSimulation) {
-      const simulationEntry = {
-        date: newSimulation.date,
-        teamAName: newSimulation.teamAName,
-        teamBName: newSimulation.teamBName,
-        matchType: getMatchTypeLabel(newSimulation.matchSettings.matchType, newSimulation.matchSettings),
-        score: newSimulation.resultatsFT.scoreExact,
-        probability: newSimulation.resultatsFT.scoreExactPourcentage,
-        outcome: getOutcome(newSimulation),
-        couponCount: newSimulation.couponParis.length,
-        couponCount100: newSimulation.couponParis100 ? newSimulation.couponParis100.length : 0,
-        id: Date.now().toString()
-      };
-      
-      // Ajouter au début et limiter à 50 entrées
-      setHistory(prev => [simulationEntry, ...prev.slice(0, 49)]);
+      const updatedHistory = historyApi.addToHistory(newSimulation);
+      setHistory(updatedHistory);
     }
-  }, [newSimulation, setHistory]);
+  }, [newSimulation]);
   
-  // Effacer l'historique
+  // Clear history
   const clearHistory = () => {
     if (window.confirm('Êtes-vous sûr de vouloir effacer tout l\'historique des simulations ?')) {
-      setHistory([]);
+      setHistory(historyApi.clearHistory());
     }
   };
   
-  // Obtenir l'issue d'un match
-  function getOutcome(simulation) {
-    const { resultatsFT } = simulation;
-    const probVictoireA = parseFloat(resultatsFT.probas.victoireA);
-    const probNul = parseFloat(resultatsFT.probas.nul);
-    const probVictoireB = parseFloat(resultatsFT.probas.victoireB);
-    
-    if (probVictoireA > probVictoireB && probVictoireA > probNul) {
-      return `Victoire ${simulation.teamAName}`;
-    } else if (probVictoireB > probVictoireA && probVictoireB > probNul) {
-      return `Victoire ${simulation.teamBName}`;
-    } else {
-      return 'Match nul';
-    }
-  }
-  
-  // Obtenir le label pour le type de match
-  function getMatchTypeLabel(matchType, settings) {
-    switch (matchType) {
-      case 'friendly': return 'Match amical';
-      case 'league': return 'Championnat';
-      case 'competition': 
-        switch (settings.competitionType) {
-          case 'championsLeague': return 'Ligue des Champions';
-          case 'europaLeague': return 'Ligue Europa';
-          case 'domesticCup': return 'Coupe Nationale';
-          case 'worldCup': return 'Coupe du Monde';
-          default: return 'Compétition';
-        }
-      default: return 'Match';
-    }
-  }
-  
-  // Formater une date
-  function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleString();
-  }
-  
-  // Afficher seulement les 5 dernières entrées par défaut
+  // Display only the 5 most recent entries by default
   const displayedHistory = expanded ? history : history.slice(0, 5);
   
   return (

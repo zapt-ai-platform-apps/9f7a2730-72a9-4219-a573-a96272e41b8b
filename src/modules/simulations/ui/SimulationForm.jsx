@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useLocalStorage } from '@/shared/utils/useLocalStorage';
 
 function SimulationForm({ onSimulate }) {
-  // Valeurs de configuration par défaut
+  // Default configuration values
   const [teamAName, setTeamAName] = useState('Équipe A');
   const [teamBName, setTeamBName] = useState('Équipe B');
   const [scoresAInput, setScoresAInput] = useState('');
@@ -11,21 +11,22 @@ function SimulationForm({ onSimulate }) {
   const [isHomeTeamA, setIsHomeTeamA] = useState(true);
   const [isHomeTeamB, setIsHomeTeamB] = useState(false);
   const [matchType, setMatchType] = useState('league');
-  const [alpha, setAlpha] = useState(1.3); // Valeur par défaut mise à 1.3 (précédemment 1.0)
-  const [iterations, setIterations] = useState(18000); // Valeur par défaut mise à 18000 (précédemment 10000)
+  const [alpha, setAlpha] = useState(1.3);
+  const [iterations, setIterations] = useState(18000);
   const [rankA, setRankA] = useState(5);
   const [rankB, setRankB] = useState(10);
   const [competitionType, setCompetitionType] = useState('championsLeague');
   const [isKnockoutStage, setIsKnockoutStage] = useState(false);
 
-  // Historique des équipes et scores
+  // Team and score history
   const [recentTeams, setRecentTeams] = useLocalStorage('pr_pronos_teams', []);
   const [recentScores, setRecentScores] = useLocalStorage('pr_pronos_scores', {});
 
-  // État pour validation du formulaire
+  // Form validation state
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Changement de la valeur des sliders
+  // Handle slider value changes
   const handleAlphaChange = (e) => {
     setAlpha(parseFloat(e.target.value));
   };
@@ -34,7 +35,7 @@ function SimulationForm({ onSimulate }) {
     setIterations(parseInt(e.target.value));
   };
 
-  // Gestion des équipes à domicile
+  // Handle home team selection
   const handleHomeTeamChange = (team) => {
     if (team === 'A') {
       setIsHomeTeamA(true);
@@ -45,7 +46,7 @@ function SimulationForm({ onSimulate }) {
     }
   };
 
-  // Gestion des sélections d'équipes récentes
+  // Handle recent team selection
   const handleTeamSelect = (team, position) => {
     if (position === 'A') {
       setTeamAName(team);
@@ -60,17 +61,20 @@ function SimulationForm({ onSimulate }) {
     }
   };
 
-  // Soumission du formulaire
+  // Form submission
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Valider les entrées
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
+    // Validate inputs
     const newErrors = {};
     
     if (!teamAName.trim()) newErrors.teamAName = 'Nom de l\'équipe A requis';
     if (!teamBName.trim()) newErrors.teamBName = 'Nom de l\'équipe B requis';
     
-    // Validation et traitement des scores
+    // Validate and process scores
     let scoresA = [];
     let scoresB = [];
     let h2hScores = [];
@@ -100,7 +104,7 @@ function SimulationForm({ onSimulate }) {
         }
       }
       
-      // Traitement optionnel des confrontations directes
+      // Process optional head-to-head confrontations
       if (h2hScoresInput.trim()) {
         h2hScores = h2hScoresInput.split(',').map(s => {
           const [scoreA, scoreB] = s.trim().split('-').map(Number);
@@ -114,17 +118,18 @@ function SimulationForm({ onSimulate }) {
       newErrors.h2hScores = 'Format invalide. Utilisez le format "A-B" (ex: 2-1)';
     }
     
-    // S'il y a des erreurs, afficher et arrêter
+    // If there are errors, display and stop
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setIsSubmitting(false);
       return;
     }
     
-    // Mémoriser les équipes et leurs scores
+    // Remember teams and their scores
     saveTeamData(teamAName, scoresA);
     saveTeamData(teamBName, scoresB);
     
-    // Envoyer les données pour simulation
+    // Send data for simulation
     onSimulate({
       teamAName, 
       teamBName,
@@ -141,20 +146,22 @@ function SimulationForm({ onSimulate }) {
       competitionType,
       isKnockoutStage
     });
+
+    setIsSubmitting(false);
   };
   
-  // Sauvegarder les données d'équipe pour l'historique
+  // Save team data for history
   const saveTeamData = (teamName, scores) => {
     if (!teamName.trim() || scores.length === 0) return;
     
-    // Mettre à jour la liste des équipes récentes
+    // Update recent teams list
     let updatedTeams = [...recentTeams];
     if (!updatedTeams.includes(teamName)) {
-      updatedTeams = [teamName, ...updatedTeams.slice(0, 9)]; // Garder les 10 dernières
+      updatedTeams = [teamName, ...updatedTeams.slice(0, 9)]; // Keep last 10
       setRecentTeams(updatedTeams);
     }
     
-    // Mettre à jour les scores associés à l'équipe
+    // Update scores associated with the team
     setRecentScores(prev => ({
       ...prev,
       [teamName]: scores
@@ -164,9 +171,9 @@ function SimulationForm({ onSimulate }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Noms et scores des équipes */}
+        {/* Team names and scores */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Équipe A */}
+          {/* Team A */}
           <div>
             <div className="mb-4">
               <label htmlFor="teamAName" className="block text-sm font-medium mb-2">Nom de l'équipe A</label>
@@ -176,14 +183,14 @@ function SimulationForm({ onSimulate }) {
                   id="teamAName" 
                   value={teamAName}
                   onChange={(e) => setTeamAName(e.target.value)}
-                  className={`input-field ${errors.teamAName ? 'border-red-500' : ''}`} 
+                  className={`input-field box-border ${errors.teamAName ? 'border-red-500' : ''}`} 
                   required
                 />
                 {recentTeams.length > 0 && (
                   <div className="relative">
                     <select 
                       onChange={(e) => handleTeamSelect(e.target.value, 'A')}
-                      className="input-field py-2"
+                      className="input-field box-border py-2"
                       value=""
                     >
                       <option value="" disabled>Équipes récentes</option>
@@ -217,14 +224,14 @@ function SimulationForm({ onSimulate }) {
                 value={scoresAInput}
                 onChange={(e) => setScoresAInput(e.target.value)}
                 placeholder="Ex: 2,1,3,0,2" 
-                className={`input-field ${errors.scoresA ? 'border-red-500' : ''}`}
+                className={`input-field box-border ${errors.scoresA ? 'border-red-500' : ''}`}
                 required
               />
               {errors.scoresA && <p className="text-red-500 text-xs mt-1">{errors.scoresA}</p>}
             </div>
           </div>
           
-          {/* Équipe B */}
+          {/* Team B */}
           <div>
             <div className="mb-4">
               <label htmlFor="teamBName" className="block text-sm font-medium mb-2">Nom de l'équipe B</label>
@@ -234,14 +241,14 @@ function SimulationForm({ onSimulate }) {
                   id="teamBName" 
                   value={teamBName}
                   onChange={(e) => setTeamBName(e.target.value)}
-                  className={`input-field ${errors.teamBName ? 'border-red-500' : ''}`}
+                  className={`input-field box-border ${errors.teamBName ? 'border-red-500' : ''}`}
                   required
                 />
                 {recentTeams.length > 0 && (
                   <div className="relative">
                     <select 
                       onChange={(e) => handleTeamSelect(e.target.value, 'B')}
-                      className="input-field py-2"
+                      className="input-field box-border py-2"
                       value=""
                     >
                       <option value="" disabled>Équipes récentes</option>
@@ -275,7 +282,7 @@ function SimulationForm({ onSimulate }) {
                 value={scoresBInput}
                 onChange={(e) => setScoresBInput(e.target.value)}
                 placeholder="Ex: 1,0,1,2,1" 
-                className={`input-field ${errors.scoresB ? 'border-red-500' : ''}`}
+                className={`input-field box-border ${errors.scoresB ? 'border-red-500' : ''}`}
                 required
               />
               {errors.scoresB && <p className="text-red-500 text-xs mt-1">{errors.scoresB}</p>}
@@ -283,7 +290,7 @@ function SimulationForm({ onSimulate }) {
           </div>
         </div>
         
-        {/* Confrontations directes */}
+        {/* Head-to-head confrontations */}
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Confrontations directes (H2H)</h3>
           <div>
@@ -296,13 +303,13 @@ function SimulationForm({ onSimulate }) {
               value={h2hScoresInput}
               onChange={(e) => setH2hScoresInput(e.target.value)}
               placeholder="Ex: 2-1,0-0,3-2,1-2,2-0" 
-              className={`input-field ${errors.h2hScores ? 'border-red-500' : ''}`}
+              className={`input-field box-border ${errors.h2hScores ? 'border-red-500' : ''}`}
             />
             {errors.h2hScores && <p className="text-red-500 text-xs mt-1">{errors.h2hScores}</p>}
           </div>
         </div>
         
-        {/* Type de match */}
+        {/* Match type */}
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Type de match</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,7 +319,7 @@ function SimulationForm({ onSimulate }) {
                 id="matchType" 
                 value={matchType}
                 onChange={(e) => setMatchType(e.target.value)}
-                className="input-field"
+                className="input-field box-border"
               >
                 <option value="friendly">Match amical</option>
                 <option value="league">Match de championnat</option>
@@ -332,7 +339,7 @@ function SimulationForm({ onSimulate }) {
                       max="20" 
                       value={rankA}
                       onChange={(e) => setRankA(parseInt(e.target.value))}
-                      className="input-field"
+                      className="input-field box-border"
                     />
                   </div>
                   <div>
@@ -344,7 +351,7 @@ function SimulationForm({ onSimulate }) {
                       max="20" 
                       value={rankB}
                       onChange={(e) => setRankB(parseInt(e.target.value))}
-                      className="input-field"
+                      className="input-field box-border"
                     />
                   </div>
                 </div>
@@ -358,7 +365,7 @@ function SimulationForm({ onSimulate }) {
                   id="competitionType" 
                   value={competitionType}
                   onChange={(e) => setCompetitionType(e.target.value)}
-                  className="input-field"
+                  className="input-field box-border"
                 >
                   <option value="championsLeague">Ligue des Champions</option>
                   <option value="europaLeague">Ligue Europa</option>
@@ -382,12 +389,12 @@ function SimulationForm({ onSimulate }) {
           </div>
         </div>
         
-        {/* Configuration avancée */}
+        {/* Advanced configuration */}
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Configuration avancée</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Slider pour alpha (récence) */}
+            {/* Alpha (recency) slider */}
             <div>
               <label htmlFor="alpha" className="block text-sm font-medium mb-2">
                 Poids récence (alpha): <span id="alphaValue">{alpha}</span>
@@ -404,7 +411,7 @@ function SimulationForm({ onSimulate }) {
               />
             </div>
             
-            {/* Slider pour les itérations Monte Carlo */}
+            {/* Monte Carlo iterations slider */}
             <div>
               <label htmlFor="iterations" className="block text-sm font-medium mb-2">
                 Itérations Monte Carlo: <span id="iterationsValue">{iterations}</span>
@@ -427,8 +434,9 @@ function SimulationForm({ onSimulate }) {
           <button 
             type="submit" 
             className="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer"
+            disabled={isSubmitting}
           >
-            Simuler le match
+            {isSubmitting ? 'Simulation en cours...' : 'Simuler le match'}
           </button>
         </div>
       </form>
