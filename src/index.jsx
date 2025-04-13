@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
-import '@/styles/global.css';
+import App from '@/app/App';
+import './index.css';
 import * as Sentry from '@sentry/browser';
 
 Sentry.init({

@@ -1,53 +1,57 @@
-import { getTheme, setDarkMode } from './internal/services';
-import { validateTheme } from './validators';
+import { eventBus } from '@/modules/core/events';
+import { events } from './events';
+import { initializeTheme, setTheme, addThemeChangeListener } from './internal/themeManager';
 
+/**
+ * Theme API for external modules
+ */
 export const api = {
   /**
-   * Get current theme settings
-   * @returns {Object} - The current theme settings
+   * Initialize theme based on system preference
+   * @returns {boolean} - Whether dark mode is enabled
    */
-  getTheme() {
-    const theme = getTheme();
-    return validateTheme(theme, {
-      actionName: 'getTheme',
-      direction: 'outgoing',
-      location: 'theme/api.js',
-      moduleFrom: 'theme',
-      moduleTo: 'client'
-    });
+  initialize() {
+    const isDarkMode = initializeTheme();
+    eventBus.publish(events.THEME_CHANGED, { isDarkMode });
+    return isDarkMode;
   },
   
   /**
-   * Toggle dark mode
-   * @returns {Object} - The updated theme settings
+   * Set theme
+   * @param {boolean} isDarkMode - Whether to enable dark mode
    */
-  toggleDarkMode() {
-    const theme = getTheme();
-    const updatedTheme = setDarkMode(!theme.darkMode);
-    
-    return validateTheme(updatedTheme, {
-      actionName: 'toggleDarkMode',
-      direction: 'outgoing',
-      location: 'theme/api.js',
-      moduleFrom: 'theme',
-      moduleTo: 'client'
-    });
+  setTheme(isDarkMode) {
+    setTheme(isDarkMode);
+    eventBus.publish(events.THEME_CHANGED, { isDarkMode });
   },
   
   /**
-   * Set dark mode to a specific value
-   * @param {boolean} value - The new dark mode value
-   * @returns {Object} - The updated theme settings
+   * Toggle theme
+   * @param {boolean} currentDarkMode - Current dark mode state
+   * @returns {boolean} - New dark mode state
    */
-  setDarkMode(value) {
-    const updatedTheme = setDarkMode(Boolean(value));
-    
-    return validateTheme(updatedTheme, {
-      actionName: 'setDarkMode',
-      direction: 'outgoing',
-      location: 'theme/api.js',
-      moduleFrom: 'theme',
-      moduleTo: 'client'
-    });
+  toggleTheme(currentDarkMode) {
+    const newDarkMode = !currentDarkMode;
+    setTheme(newDarkMode);
+    eventBus.publish(events.THEME_CHANGED, { isDarkMode: newDarkMode });
+    return newDarkMode;
+  },
+  
+  /**
+   * Add theme change listener
+   * @param {Function} callback - Callback to call when theme changes
+   * @returns {Function} - Function to remove listener
+   */
+  onThemeChange(callback) {
+    return addThemeChangeListener(callback);
+  },
+  
+  /**
+   * Subscribe to theme changes via event bus
+   * @param {Function} callback - Callback to call when theme changes
+   * @returns {Function} - Function to unsubscribe
+   */
+  subscribeToThemeChanges(callback) {
+    return eventBus.subscribe(events.THEME_CHANGED, callback);
   }
 };

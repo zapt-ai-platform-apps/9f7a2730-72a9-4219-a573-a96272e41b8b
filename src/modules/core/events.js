@@ -1,3 +1,6 @@
+/**
+ * Event bus for cross-module communication
+ */
 export class EventBus {
   subscribers = {};
 

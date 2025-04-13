@@ -1,13 +1,6 @@
 import React from 'react';
-import { api as themeApi } from '../api';
 
-function ThemeToggle() {
-  const { darkMode } = themeApi.getTheme();
-  
-  const toggleDarkMode = () => {
-    themeApi.toggleDarkMode();
-  };
-
+function ThemeToggle({ darkMode, toggleDarkMode }) {
   return (
     <div className="fixed bottom-4 right-4">
       <button 
