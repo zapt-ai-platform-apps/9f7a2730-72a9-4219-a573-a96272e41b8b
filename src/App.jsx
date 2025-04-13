@@ -4,12 +4,15 @@ import SimulationForm from './components/SimulationForm';
 import SimulationResults from './components/SimulationResults';
 import Footer from './components/Footer';
 import ThemeToggle from './components/ThemeToggle';
+import HistoryButton from './components/HistoryButton';
+import SimulationHistory from './components/SimulationHistory';
 import * as Sentry from '@sentry/browser';
 
 function App() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showHistory, setShowHistory] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return true;
@@ -41,10 +44,15 @@ function App() {
     setDarkMode(prev => !prev);
   };
 
+  const toggleHistory = () => {
+    setShowHistory(prev => !prev);
+  };
+
   const handleSimulate = async (formData) => {
     setLoading(true);
     setProgress(0);
     setResults(null);
+    setShowHistory(false);
     
     try {
       console.log("Début de la simulation avec les données:", formData);
@@ -80,11 +88,19 @@ function App() {
   return (
     <div className="min-h-screen bg-bgLight dark:bg-bgDark text-textLight dark:text-textDark">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
-        <Header />
+        <div className="relative">
+          <HistoryButton onClick={toggleHistory} />
+          <Header />
+        </div>
         
-        <SimulationForm onSimulate={handleSimulate} />
-        
-        {results && <SimulationResults results={results} />}
+        {showHistory ? (
+          <SimulationHistory onClose={() => setShowHistory(false)} />
+        ) : (
+          <>
+            <SimulationForm onSimulate={handleSimulate} />
+            {results && <SimulationResults results={results} />}
+          </>
+        )}
         
         <ThemeToggle darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         
@@ -141,6 +157,9 @@ async function runSimulation(formData, updateProgress) {
   
   // Générer le coupon de paris
   const couponParis = genererCouponParis(resultatsHT, resultatsFT);
+  
+  // Filtrer seulement les paris avec 100% de certitude
+  const couponParis100 = couponParis.filter(pari => parseFloat(pari.probabilite) >= 100);
   updateProgress(100);
   
   // Retourner les résultats formatés
@@ -159,6 +178,7 @@ async function runSimulation(formData, updateProgress) {
     resultatsHT,
     resultatsFT,
     couponParis,
+    couponParis100,
     date: new Date().toISOString()
   };
 }

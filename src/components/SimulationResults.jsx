@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import Chart from 'chart.js/auto';
-import SimulationHistory from './SimulationHistory';
 
 function SimulationResults({ results }) {
   const [outcomeChart, setOutcomeChart] = useState(null);
@@ -73,7 +72,7 @@ function SimulationResults({ results }) {
   // Si pas de résultats, ne rien afficher
   if (!results) return null;
   
-  const { teamAName, teamBName, resultatsHT, resultatsFT, couponParis } = results;
+  const { teamAName, teamBName, resultatsHT, resultatsFT, couponParis, couponParis100 } = results;
   
   // Trouver l'issue la plus probable
   const issues = [
@@ -92,20 +91,22 @@ function SimulationResults({ results }) {
           Résultats: {teamAName} vs {teamBName}
         </h2>
         
-        {/* Coupon sûr à jouer */}
+        {/* Coupon sûr à jouer (seulement 100%) */}
         <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-5 rounded-lg mb-8 shadow-lg">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Coupon sûr à jouer</h3>
-            <span className="bg-white text-green-700 px-3 py-1 rounded-full text-sm font-bold">100% CONFIANCE</span>
+            <h3 className="text-xl font-bold">Pronostics 100% Gagnants</h3>
+            <span className="bg-white text-green-700 px-3 py-1 rounded-full text-sm font-bold">
+              {couponParis100.length} pronostics sûrs
+            </span>
           </div>
           <div className="space-y-2 bg-white bg-opacity-20 p-4 rounded-lg">
-            {couponParis.length === 0 ? (
+            {couponParis100.length === 0 ? (
               <p className="text-center text-white italic">
-                Aucun pari avec une probabilité supérieure à 70% n'a été identifié pour ce match.
+                Aucun pronostic avec une probabilité de 100% n'a été identifié pour ce match.
               </p>
             ) : (
               <>
-                {couponParis.map((pari, index) => (
+                {couponParis100.map((pari, index) => (
                   <div 
                     key={`pari-${index}`} 
                     className="bg-white bg-opacity-10 p-3 rounded-lg flex justify-between items-center"
@@ -118,7 +119,7 @@ function SimulationResults({ results }) {
                   </div>
                 ))}
                 <div className="mt-4 text-center text-white text-sm italic">
-                  Ces paris ont tous une probabilité supérieure à 70% selon notre simulation avancée.
+                  Ces pronostics ont tous une probabilité de 100% selon notre simulation avancée.
                 </div>
               </>
             )}
@@ -182,9 +183,6 @@ function SimulationResults({ results }) {
             ))}
           </div>
         </div>
-        
-        {/* Historique des simulations */}
-        <SimulationHistory newSimulation={results} />
       </div>
     </div>
   );
