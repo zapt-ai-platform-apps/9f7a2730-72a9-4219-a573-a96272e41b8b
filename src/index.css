@@ -1,3 +1,96 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Variables globales */
+:root {
+  --primary-color: #5D5CDE;
+  --secondary-color: #38BDF8;
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --bg-light: #FFFFFF;
+  --bg-dark: #181818;
+  --text-light: #1F2937;
+  --text-dark: #E5E7EB;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  @apply transition-colors duration-300;
+}
+
+.dark input, 
+.dark select, 
+.dark textarea {
+  color-scheme: dark;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-soft {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Classes utilitaires */
+.text-primary {
+  color: var(--primary-color);
+}
+
+.bg-primary {
+  background-color: var(--primary-color);
+}
+
+.focus-ring {
+  @apply focus:ring-2 focus:ring-primary focus:outline-none;
+}
+
+.btn {
+  @apply py-2 px-4 rounded-lg font-semibold transition-all duration-300 cursor-pointer;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-opacity-90 active:scale-95;
+}
+
+.btn-outline {
+  @apply border border-primary text-primary hover:bg-primary hover:bg-opacity-10 active:scale-95;
+}
+
+.btn-success {
+  @apply bg-green-500 text-white hover:bg-green-600 active:scale-95;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-600 active:scale-95;
+}
+
+.input-field {
+  @apply w-full p-3 border border-gray-300 dark:border-gray-700 rounded-md 
+         bg-white dark:bg-gray-700 text-base focus-ring transition-colors duration-200;
+}
+
+.card {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6;
+}

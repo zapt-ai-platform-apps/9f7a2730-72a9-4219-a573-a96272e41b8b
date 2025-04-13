@@ -1,0 +1,193 @@
+import React, { useEffect, useState } from 'react';
+import Chart from 'chart.js/auto';
+import SimulationHistory from './SimulationHistory';
+
+function SimulationResults({ results }) {
+  const [outcomeChart, setOutcomeChart] = useState(null);
+  
+  // Créer/mettre à jour le graphique pour les résultats
+  useEffect(() => {
+    if (!results) return;
+    
+    const { resultatsFT } = results;
+    
+    // Préparer les données pour le graphique
+    const issues = [
+      { name: `Victoire ${results.teamAName}`, value: parseFloat(resultatsFT.probas.victoireA) },
+      { name: 'Match nul', value: parseFloat(resultatsFT.probas.nul) },
+      { name: `Victoire ${results.teamBName}`, value: parseFloat(resultatsFT.probas.victoireB) }
+    ];
+    
+    // Détruire le graphique existant s'il y en a un
+    if (outcomeChart) {
+      outcomeChart.destroy();
+    }
+    
+    // Créer un nouveau graphique
+    const ctx = document.getElementById('outcomeChart').getContext('2d');
+    const newChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: issues.map(i => i.name),
+        datasets: [{
+          data: issues.map(i => i.value),
+          backgroundColor: [
+            'rgba(93, 92, 222, 0.7)',  // Victoire A
+            'rgba(209, 213, 219, 0.7)', // Nul
+            'rgba(56, 189, 248, 0.7)'   // Victoire B
+          ],
+          borderColor: [
+            'rgba(93, 92, 222, 1)',
+            'rgba(209, 213, 219, 1)',
+            'rgba(56, 189, 248, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#1F2937',
+              usePointStyle: true,
+              padding: 20
+            }
+          }
+        }
+      }
+    });
+    
+    setOutcomeChart(newChart);
+    
+    // Nettoyer le graphique à la destruction du composant
+    return () => {
+      if (newChart) {
+        newChart.destroy();
+      }
+    };
+  }, [results]);
+  
+  // Si pas de résultats, ne rien afficher
+  if (!results) return null;
+  
+  const { teamAName, teamBName, resultatsHT, resultatsFT, couponParis } = results;
+  
+  // Trouver l'issue la plus probable
+  const issues = [
+    { name: `Victoire ${teamAName}`, value: parseFloat(resultatsFT.probas.victoireA) },
+    { name: 'Match nul', value: parseFloat(resultatsFT.probas.nul) },
+    { name: `Victoire ${teamBName}`, value: parseFloat(resultatsFT.probas.victoireB) }
+  ];
+  
+  const issuePlusProbable = issues.reduce((max, issue) => 
+    issue.value > max.value ? issue : max, issues[0]);
+
+  return (
+    <div id="results">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 className="text-2xl font-bold mb-6 text-center">
+          Résultats: {teamAName} vs {teamBName}
+        </h2>
+        
+        {/* Coupon sûr à jouer */}
+        <div className="bg-gradient-to-r from-green-500 to-blue-500 text-white p-5 rounded-lg mb-8 shadow-lg">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Coupon sûr à jouer</h3>
+            <span className="bg-white text-green-700 px-3 py-1 rounded-full text-sm font-bold">100% CONFIANCE</span>
+          </div>
+          <div className="space-y-2 bg-white bg-opacity-20 p-4 rounded-lg">
+            {couponParis.length === 0 ? (
+              <p className="text-center text-white italic">
+                Aucun pari avec une probabilité supérieure à 70% n'a été identifié pour ce match.
+              </p>
+            ) : (
+              <>
+                {couponParis.map((pari, index) => (
+                  <div 
+                    key={`pari-${index}`} 
+                    className="bg-white bg-opacity-10 p-3 rounded-lg flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="font-bold">{pari.type}</div>
+                      <div>{pari.pari}</div>
+                    </div>
+                    <div className="text-xl font-bold bg-white text-green-600 px-3 py-1 rounded-lg">{pari.probabilite}%</div>
+                  </div>
+                ))}
+                <div className="mt-4 text-center text-white text-sm italic">
+                  Ces paris ont tous une probabilité supérieure à 70% selon notre simulation avancée.
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Résultats textuels */}
+          <div className="space-y-6">
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3">Scores probables</h3>
+              <p className="mb-2">
+                Score mi-temps (HT): 
+                <span className="font-bold text-primary ml-2">{resultatsHT.scoreExact}</span> 
+                <span className="text-gray-600 dark:text-gray-400 ml-1">({resultatsHT.scoreExactPourcentage}%)</span>
+              </p>
+              <p>
+                Score final (FT): 
+                <span className="font-bold text-primary ml-2">{resultatsFT.scoreExact}</span>
+                <span className="text-gray-600 dark:text-gray-400 ml-1">({resultatsFT.scoreExactPourcentage}%)</span>
+              </p>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3">Statistiques du match</h3>
+              <p className="mb-2">BTTS (Les deux équipes marquent): <span className="font-bold">{resultatsFT.probas.btts}%</span></p>
+              <p className="mb-2">Over 1.5: <span className="font-bold">{resultatsFT.probas.over15}%</span></p>
+              <p className="mb-2">Over 2.5: <span className="font-bold">{resultatsFT.probas.over25}%</span></p>
+              <p>Over 3.5: <span className="font-bold">{resultatsFT.probas.over35}%</span></p>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-3">Répartition des issues</h3>
+              <p className="mb-2">Issue la plus probable: <span className="font-bold text-primary">{issuePlusProbable.name}</span></p>
+              <p className="mb-1">Victoire {teamAName}: <span className="font-bold">{resultatsFT.probas.victoireA}%</span></p>
+              <p className="mb-1">Match nul: <span className="font-bold">{resultatsFT.probas.nul}%</span></p>
+              <p>Victoire {teamBName}: <span className="font-bold">{resultatsFT.probas.victoireB}%</span></p>
+            </div>
+          </div>
+          
+          {/* Graphique */}
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg flex items-center justify-center">
+            <div className="w-full h-64">
+              <canvas id="outcomeChart"></canvas>
+            </div>
+          </div>
+        </div>
+        
+        {/* Top 5 scores */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold mb-3">Top 5 scores les plus probables</h3>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {resultatsFT.topScores.map((score, index) => (
+              <div 
+                key={`score-${index}`} 
+                className="bg-white dark:bg-gray-700 p-3 rounded-lg text-center shadow"
+              >
+                <div className="text-lg font-bold mb-1">{score.score}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300">{score.pourcentage}%</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Historique des simulations */}
+        <SimulationHistory newSimulation={results} />
+      </div>
+    </div>
+  );
+}
+
+export default SimulationResults;
