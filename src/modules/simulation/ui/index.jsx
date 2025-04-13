@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import * as Sentry from '@sentry/browser';
-import { api } from '../api';
+import React, { useState, useEffect } from 'react';
 import SimulationForm from './SimulationForm';
 import SimulationResults from './SimulationResults';
 import AccessCodeModal from '@/shared/components/AccessCodeModal';
-import { api as storageApi } from '@/modules/storage/api';
+import { api } from '../api';
+import * as Sentry from '@sentry/browser';
 
 function SimulationModule() {
   const [results, setResults] = useState(null);
@@ -12,51 +11,30 @@ function SimulationModule() {
   const [progress, setProgress] = useState(0);
   const [showAccessCodeModal, setShowAccessCodeModal] = useState(false);
   const [pendingFormData, setPendingFormData] = useState(null);
-
+  
+  const updateProgress = (value) => {
+    setProgress(value);
+  };
+  
   const handleSimulate = async (formData) => {
+    // Set pending form data and show access code modal
     setPendingFormData(formData);
     setShowAccessCodeModal(true);
   };
-
-  const handleVerifyCode = async (code) => {
-    try {
-      const isValid = await api.verifyAccessCode(code);
-      
-      if (isValid && pendingFormData) {
-        setShowAccessCodeModal(false);
-        runSimulation(pendingFormData);
-      }
-      
-      return isValid;
-    } catch (error) {
-      Sentry.captureException(error);
-      console.error("Erreur lors de la vérification du code:", error);
-      return false;
-    }
-  };
-
-  const handleCancelVerification = () => {
-    setShowAccessCodeModal(false);
-    setPendingFormData(null);
-  };
-
-  const runSimulation = async (formData) => {
+  
+  const proceedWithSimulation = async (formData) => {
     setLoading(true);
     setProgress(0);
     setResults(null);
     
     try {
-      console.log("Début de la simulation avec les données:", formData);
+      console.log("Starting simulation with data:", formData);
       
-      // Call simulation API
+      // Call the simulation service
       const simulationResults = await api.simulate(formData, updateProgress);
-      console.log("Résultats de simulation obtenus:", simulationResults);
+      console.log("Simulation results obtained:", simulationResults);
       
-      // Set results for display
       setResults(simulationResults);
-      
-      // Save to history
-      storageApi.addToSimulationHistory(simulationResults);
       
       // Scroll to results
       setTimeout(() => {
@@ -68,23 +46,49 @@ function SimulationModule() {
       
     } catch (error) {
       Sentry.captureException(error);
-      console.error("Erreur lors de la simulation:", error);
+      console.error("Error during simulation:", error);
       alert(`Une erreur s'est produite: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
-
-  const updateProgress = (value) => {
-    setProgress(value);
+  
+  const handleVerifyCode = async (code) => {
+    try {
+      const isValid = await api.verifyAccessCode(code);
+      
+      if (isValid && pendingFormData) {
+        setShowAccessCodeModal(false);
+        proceedWithSimulation(pendingFormData);
+      }
+      
+      return isValid;
+    } catch (error) {
+      Sentry.captureException(error);
+      console.error("Error verifying access code:", error);
+      return false;
+    }
   };
-
+  
+  const handleCancelCode = () => {
+    setShowAccessCodeModal(false);
+    setPendingFormData(null);
+  };
+  
   return (
-    <>
+    <div>
       <SimulationForm onSimulate={handleSimulate} />
       {results && <SimulationResults results={results} />}
       
-      {/* Loading overlay */}
+      {/* Access Code Modal */}
+      {showAccessCodeModal && (
+        <AccessCodeModal 
+          onVerify={handleVerifyCode}
+          onCancel={handleCancelCode}
+        />
+      )}
+      
+      {/* Loader */}
       {loading && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg text-center">
@@ -94,15 +98,7 @@ function SimulationModule() {
           </div>
         </div>
       )}
-      
-      {/* Access code modal */}
-      {showAccessCodeModal && (
-        <AccessCodeModal 
-          onVerify={handleVerifyCode}
-          onCancel={handleCancelVerification}
-        />
-      )}
-    </>
+    </div>
   );
 }
 

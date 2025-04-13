@@ -72,7 +72,7 @@ function SimulationResults({ results }) {
   // If no results, display nothing
   if (!results) return null;
   
-  const { teamAName, teamBName, resultatsHT, resultatsFT, couponParis, couponParis75 } = results;
+  const { teamAName, teamBName, resultatsHT, resultatsFT, couponParis75 } = results;
   
   // Find most probable outcome
   const issues = [
